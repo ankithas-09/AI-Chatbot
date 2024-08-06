@@ -19,19 +19,19 @@ Welcome to the AI Chatbot project built with Next.js! This chatbot uses modern w
 
 ### Installation
 
-1. **Clone the Repository**
+1. Clone the Repository**
 
    ```bash
    git clone https://github.com/yourusername/your-repository.git
    cd your-repository
    
-2. ** Install dependiencies
+2. Install dependiencies
 
    ```bash
    npm install
    npm install next
 
-3. ** Create .env.local file
+3. Create .env.local file
 
    ```bash
    OPENAI_API_KEY=$YOUR_API_KEY
