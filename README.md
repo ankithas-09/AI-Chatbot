@@ -37,7 +37,7 @@ Welcome to the AI Chatbot project built with Next.js! This chatbot uses modern w
 
    ```bash
    OPENAI_API_KEY=$YOUR_API_KEY
-   MONGODB_API=$YOUR_API_KEY
+   MONGODB_URI=$YOUR_API_KEY
 
 4. Run the command
 
