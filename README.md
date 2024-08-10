@@ -30,11 +30,14 @@ Welcome to the AI Chatbot project built with Next.js! This chatbot uses modern w
    ```bash
    npm install
    npm install next
+   npm install openai
+   npm install mangodb
 
 3. Create .env.local file
 
    ```bash
    OPENAI_API_KEY=$YOUR_API_KEY
+   MONGODB_API=$YOUR_API_KEY
 
 4. Run the command
 
