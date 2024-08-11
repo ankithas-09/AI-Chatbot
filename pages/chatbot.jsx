@@ -20,44 +20,6 @@ export default function ChatbotPage({ username, created }) {
     }
   }, [messages]);
 
-  const simulateTyping = (text) => {
-    return new Promise((resolve) => {
-      const typingDelay = 50;
-      let index = 0;
-      let simulatedText = '';
-  
-      if (typingTimeoutRef.current) {
-        clearInterval(typingTimeoutRef.current);
-      }
-  
-      typingTimeoutRef.current = setInterval(() => {
-        simulatedText += text[index++];
-        setMessages((prevMessages) => {
-          const newMessages = [...prevMessages];
-          const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
-  
-          if (botIndex !== -1) {
-            newMessages[botIndex] = { ...newMessages[botIndex], text: simulatedText };
-          } else {
-            newMessages.push({ sender: 'bot', text: simulatedText, isComplete: false });
-          }
-  
-          return newMessages;
-        });
-  
-        if (index >= text.length) {
-          clearInterval(typingTimeoutRef.current);
-          setMessages((prevMessages) => prevMessages.map(msg =>
-            msg.sender === 'bot' && !msg.isComplete
-              ? { ...msg, isComplete: true }
-              : msg
-          ));
-          resolve();
-        }
-      }, typingDelay);
-    });
-  };  
-
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
   
@@ -67,27 +29,55 @@ export default function ChatbotPage({ username, created }) {
     setIsTyping(true);
   
     try {
+      const conversation = [...messages, userMessage].map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'bot',
+        content: msg.text
+      }));
+
+      console.log('Sending conversation:', conversation); // Debugging line to verify format
+
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ conversation: [...messages, userMessage] }),
+        body: JSON.stringify(conversation), // Correctly format the conversation as an array
       });
   
-      const data = await response.json();
       if (response.ok) {
-        // Only simulate typing, don't add full response again
-        await simulateTyping(data.response);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          result += decoder.decode(value, { stream: true });
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages];
+            const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
+    
+            if (botIndex !== -1) {
+              newMessages[botIndex] = { ...newMessages[botIndex], text: result };
+            } else {
+              newMessages.push({ sender: 'bot', text: result, isComplete: false });
+            }
+    
+            return newMessages;
+          });
+        }
+        setMessages((prevMessages) => prevMessages.map(msg =>
+          msg.sender === 'bot' && !msg.isComplete
+            ? { ...msg, isComplete: true }
+            : msg
+        ));
       } else {
-        console.error('Error from API:', data.message);
         setMessages((prevMessages) => [
           ...prevMessages,
-          { sender: 'bot', text: 'Sorry, something went wrong.' },
+          { sender: 'bot', text: 'Error: Unable to fetch response' },
         ]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       setMessages((prevMessages) => [
         ...prevMessages,
         { sender: 'bot', text: 'Failed to send message.' },
@@ -135,7 +125,7 @@ export default function ChatbotPage({ username, created }) {
       <div className="messageStack">
         <div className="messageList">
           {messages.map((message, index) => (
-            <div key={index} className="message">
+            <div key={index} className={`message ${message.sender}`}>
               <div className={`messageContent ${message.sender === 'user' ? 'client' : 'assistant'}`}>
                 {message.text}
               </div>
