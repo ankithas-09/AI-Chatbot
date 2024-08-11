@@ -1,45 +1,73 @@
-# AI Chatbot with Next.js
+# Buddy: AI-Chatbot
 
-Welcome to the AI Chatbot project built with Next.js! This chatbot uses modern web technologies to provide a responsive, intelligent chat experience. This README will guide you through setting up, using, and contributing to the project.
+Buddy is an AI-powered chatbot built using Next.js, React, and OpenAI. It incorporates advanced technologies such as Pinecone for vector search, MongoDB for user authentication, and Vercel for deployment. The chatbot is designed to intelligently respond to user queries by leveraging a knowledge base and various task-specific models.
+
+## Skills
+
+- **Next.js**
+- **React**
+- **OpenAI**
+- **Vercel**
+- **Streaming**
+- **Pinecone**
+- **MongoDB**
 
 ## Features
 
-- **Real-time Chat**: Communicate with the chatbot in real-time.
-- **AI Integration**: Connects to an AI model to handle various types of queries.
-- **Responsive Design**: Fully responsive UI that works on both desktop and mobile devices.
-- **Animated Background**: Visually appealing animated background for an engaging user experience.
-- **Customizable**: Easy to customize the chatbot's appearance and behavior.
+1. **Retrieval-Augmented Generation (RAG):** Implements RAG to provide responses based on a given knowledge base.
+2. **Intelligent Responses:** Uses OpenAI to generate intelligent and contextually relevant responses.
+3. **Task-Specific Models:** Implements models tailored to specific tasks for improved performance.
+4. **User Authentication:** Provides user login and authentication using MongoDB.
+5. **Feedback Mechanism:** Includes a feedback button for users to rate their experience.
 
-## Getting Started
+## Steps for Execution
 
-### Prerequisites
+1. **Clone the Repository**
 
-- Node.js (v14 or higher)
-- npm (v6 or higher) or yarn
+    ```bash
+    git clone https://github.com/yourusername/ai-chatbot.git
+    ```
 
-### Installation
+2. **Set Up Environment Variables**
 
-1. Clone the Repository**
+    Create a `.env` file in the root directory of the project and add the following environment variables:
 
-   ```bash
-   git clone https://github.com/yourusername/your-repository.git
-   cd your-repository
-   
-2. Install dependiencies
+    ```env
+    OPENAI_API_KEY=${YOUR_API_KEY}
+    MONGODB_URI=${YOUR_MONGODB_URI}
+    PINECONE_API_KEY=${YOUR_PINECONE_API_KEY}
+    PINECONE_INDEX_NAME=${YOUR_PINECONE_INDEX_NAME}
+    ```
 
-   ```bash
-   npm install
-   npm install next
-   npm install openai
-   npm install mangodb
+3. **Install Dependencies**
 
-3. Create .env.local file
+    Navigate to the project directory and run:
 
-   ```bash
-   OPENAI_API_KEY=$YOUR_API_KEY
-   MONGODB_URI=$YOUR_API_KEY
+    ```bash
+    npm install
+    ```
 
-4. Run the command
+4. **Run the Development Server**
 
-   ```bash
-   npm run dev
+    Start the development server with:
+
+    ```bash
+    npm run dev
+    ```
+
+    Your application will be running on [http://localhost:3000](http://localhost:3000).
+
+## Deployment
+
+The project is deployed and can be accessed at [https://ai-chatbot-six-mauve.vercel.app/](https://ai-chatbot-six-mauve.vercel.app/). 
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [OpenAI](https://openai.com) for providing the AI models.
+- [Pinecone](https://www.pinecone.io) for vector search capabilities.
+- [MongoDB](https://www.mongodb.com) for user authentication management.
+- [Vercel](https://vercel.com) for deployment and hosting.
