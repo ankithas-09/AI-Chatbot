@@ -3,7 +3,7 @@ import Layout from '../components/layout';
 import { getCookie } from 'cookies-next';
 import clientPromise from "../lib/mongodb";
 
-export default function ProfilePage({ username, created }) {
+export default function ChatbotPage({ username, created }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     { sender: 'bot', text: "Hi! I'm the Buddy. How can I help you today?", isComplete: true }
@@ -25,26 +25,26 @@ export default function ProfilePage({ username, created }) {
       const typingDelay = 50;
       let index = 0;
       let simulatedText = '';
-
+  
       if (typingTimeoutRef.current) {
         clearInterval(typingTimeoutRef.current);
       }
-
+  
       typingTimeoutRef.current = setInterval(() => {
         simulatedText += text[index++];
         setMessages((prevMessages) => {
           const newMessages = [...prevMessages];
           const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
-
+  
           if (botIndex !== -1) {
             newMessages[botIndex] = { ...newMessages[botIndex], text: simulatedText };
           } else {
             newMessages.push({ sender: 'bot', text: simulatedText, isComplete: false });
           }
-
+  
           return newMessages;
         });
-
+  
         if (index >= text.length) {
           clearInterval(typingTimeoutRef.current);
           setMessages((prevMessages) => prevMessages.map(msg =>
@@ -56,27 +56,28 @@ export default function ProfilePage({ username, created }) {
         }
       }, typingDelay);
     });
-  };
+  };  
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
-
+  
     const userMessage = { sender: 'user', text: input };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
     setIsTyping(true);
-
+  
     try {
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ conversation: [...messages, userMessage] }),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
+        // Only simulate typing, don't add full response again
         await simulateTyping(data.response);
       } else {
         console.error('Error from API:', data.message);
@@ -95,7 +96,7 @@ export default function ProfilePage({ username, created }) {
       setIsTyping(false);
     }
   };
-
+  
   const handleStop = () => {
     if (typingTimeoutRef.current) {
       clearInterval(typingTimeoutRef.current);
