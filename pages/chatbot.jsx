@@ -9,10 +9,11 @@ export default function ProfilePage({ username, created }) {
     { sender: 'bot', text: "Hi! I'm the Buddy. How can I help you today?", isComplete: true }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Scroll to bottom when new messages are added
     const messageList = document.querySelector('.messageList');
     if (messageList) {
       messageList.scrollTop = messageList.scrollHeight;
@@ -21,7 +22,7 @@ export default function ProfilePage({ username, created }) {
 
   const simulateTyping = (text) => {
     return new Promise((resolve) => {
-      const typingDelay = 50; // Milliseconds
+      const typingDelay = 50;
       let index = 0;
       let simulatedText = '';
 
@@ -103,6 +104,30 @@ export default function ProfilePage({ username, created }) {
     setIsTyping(false);
   };
 
+  const handleFeedbackSubmit = async () => {
+    if (feedback === null) return;
+
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rating: feedback, username }),
+      });
+
+      if (response.ok) {
+        alert('Thank you for your feedback!');
+        setShowFeedback(false);
+        setFeedback(null);
+      } else {
+        console.error('Error from API:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    }
+  };
+
   return (
     <Layout pageTitle="Chat with AI">
       <h2>Buddy</h2>
@@ -128,6 +153,25 @@ export default function ProfilePage({ username, created }) {
           <button onClick={handleStop} className="button">Stop</button>
         </div>
       </div>
+      <button 
+        className="feedback-button" 
+        onClick={() => setShowFeedback(!showFeedback)}
+      >
+        Feedback
+      </button>
+      {showFeedback && (
+        <div className="feedback-popup">
+          <select value={feedback} onChange={(e) => setFeedback(e.target.value)}>
+            <option value="" disabled>Select a rating</option>
+            <option value="1">1 - Poor</option>
+            <option value="2">2 - Fair</option>
+            <option value="3">3 - Good</option>
+            <option value="4">4 - Very Good</option>
+            <option value="5">5 - Excellent</option>
+          </select>
+          <button onClick={handleFeedbackSubmit} className="button">Submit</button>
+        </div>
+      )}
       <div className="cubes-container">
         <div className="cube"></div>
         <div className="cube"></div>
