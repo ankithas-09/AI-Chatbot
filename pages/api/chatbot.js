@@ -1,69 +1,111 @@
+// import OpenAI from 'openai';
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// export default async function handler(req, res) {
+//   if (req.method === 'POST') {
+//     const { prompt } = req.body;
+
+//     try {
+//       const completion = await openai.chat.completions.create({
+//         model: 'gpt-3.5-turbo-0125', // Use the correct model name
+//         messages: [{ role: 'user', content: prompt }],
+//         max_tokens: 150,
+//       });
+
+//       const responseText = completion.choices[0].message.content.trim();
+//       res.status(200).json({ response: responseText });
+//     } catch (error) {
+//       console.error('Error with OpenAI API:', error);
+//       res.status(500).json({ message: 'Error with OpenAI API' });
+//     }
+//   } else {
+//     res.status(405).json({ message: 'Method not allowed' });
+//   }
+// }
+
+
+import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
+import { OpenAIEmbeddings } from "@langchain/openai";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const embedModel = "text-embedding-3-small";
+
+const embeddings = new OpenAIEmbeddings({
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    modelName: embedModel
 });
 
-// Initialize Pinecone client
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY,
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
 });
-const index = pinecone.Index(process.env.PINECONE_INDEX_NAME);
 
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const { conversation } = req.body;
+const pc = new Pinecone({
+    apiKey: process.env.PINECONE_API_KEY,
+});
 
-    console.log('Received request with conversation:', conversation);
+const pineconeIndex = pc.Index(process.env.PINECONE_INDEX_NAME);
 
-    try {
-      const lastUserMessage = conversation.filter(msg => msg.sender === 'user').pop().text;
+async function performRAG(conversation) {
+    const lastFewMessages = conversation.slice(-6).map(msg => `${msg.role}: ${msg.content}`).join("\n");
+    const lastMessage = conversation.filter(msg => msg.role === 'user').pop().content;
 
-      const rawQueryEmbedding = await openai.embeddings.create({
-        input: lastUserMessage,
-        model: 'text-embedding-ada-002',
-      });
+    const rawQueryEmbedding = await openai_client.embeddings.create({
+        input: lastMessage,
+        model: embedModel
+    });
 
-      const queryEmbedding = rawQueryEmbedding.data[0].embedding;
+    const queryEmbedding = rawQueryEmbedding.data[0].embedding;
 
-      const topMatches = await index.query({
+    const topMatches = await pineconeIndex.namespace('wikipedia-articles').query({
         vector: queryEmbedding,
-        topK: 5,
+        topK: 310,
         includeMetadata: true,
-      });
+    });
 
-      const contexts = topMatches.matches.map(match => match.metadata.text);
+    const contexts = topMatches.matches.map(match => match.metadata.text);
 
-      const prompt = `
-        You are a personal assistant. Here is the context and the conversation history:
-        <CONTEXT>
-        ${contexts.join("\n\n")}
-        </CONTEXT>
-        
-        Conversation History:
-        ${conversation.map(msg => `${msg.sender}: ${msg.text}`).join("\n")}
-        
-        My QUESTION:
-        ${lastUserMessage}
-      `;
+    const augmentedQuery = `<CONTEXT>\n${contexts.slice(0, 10).join("\n\n-------\n\n")}\n-------\n</CONTEXT>\n\n\n\nMY CONVERSATION:\n${lastFewMessages}\n\nMy QUESTION:\n${lastMessage}`;
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo-0125',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-      });
+    const systemPrompt = `"You are a personal assistant. Answer any questions I have about the link provided.Out of context don't answer"`;
 
-      const responseText = completion.choices[0].message.content.trim();
-      console.log('Sending response to client:', responseText);
-      res.status(200).json({ response: responseText });
-    } catch (error) {
-      console.error('Error with OpenAI or Pinecone API:', error);
-      res.status(500).json({ message: 'Error with OpenAI or Pinecone API', error: error.message });
-    }
-  } else {
-    res.status(405).json({ message: 'Method not allowed' });
-  }
+    const res = await openai_client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: augmentedQuery }
+        ],
+        stream: true
+    });
+
+    return res;
 }
 
+export async function POST(req) {
+    const data = await req.json();
+    const completion = await performRAG(data);
+
+    const stream = new ReadableStream({
+        async start(controller) {
+            const encoder = new TextEncoder();
+            try {
+                for await (const chunk of completion) {
+                    const content = chunk.choices[0]?.delta?.content;
+                    if (content) {
+                        const text = encoder.encode(content);
+                        controller.enqueue(text);
+                    }
+                }
+            } catch (err) {
+                controller.error(err);
+            } finally {
+                controller.close();
+            }
+        },
+    });
+
+    return new NextResponse(stream);
+}
