@@ -22,47 +22,51 @@ export default function ChatbotPage({ username, created }) {
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
-
+  
     const userMessage = { sender: 'user', text: input };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
     setIsTyping(true);
-
+  
     try {
-        const conversation = [...messages, userMessage].map(msg => ({
-            role: msg.sender === 'user' ? 'user' : 'bot',
-            content: msg.text
-        }));
-
-        const response = await fetch('/api/chatbot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(conversation),
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { sender: 'bot', text: result.text },
-            ]);
-        } else {
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { sender: 'bot', text: 'Error: Unable to fetch response' },
-            ]);
-        }
-    } catch (error) {
+      const conversation = [...messages, userMessage].map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'bot',
+        content: msg.text
+      }));
+  
+      const response = await fetch('/api/chatbot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(conversation),
+      });
+  
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Remove characters enclosed in **
+        const cleanedText = result.text.replace(/\*\*(.*?)\*\*/g, '$1');
+  
         setMessages((prevMessages) => [
-            ...prevMessages,
-            { sender: 'bot', text: 'Failed to send message.' },
+          ...prevMessages,
+          { sender: 'bot', text: cleanedText },
         ]);
+      } else {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { sender: 'bot', text: 'Error: Unable to fetch response' },
+        ]);
+      }
+    } catch (error) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: 'bot', text: 'Failed to send message.' },
+      ]);
     } finally {
-        setIsTyping(false);
+      setIsTyping(false);
     }
-  };
+  };  
   
   const handleStop = () => {
     if (typingTimeoutRef.current) {
