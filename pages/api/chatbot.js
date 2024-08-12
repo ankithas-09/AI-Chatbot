@@ -28,10 +28,18 @@ async function performRAG(conversation) {
         const lastFewMessages = conversation.slice(-6).map(msg => `${msg.role}: ${msg.content}`).join("\n");
         const lastMessage = conversation.filter(msg => msg.role === 'user').pop().content;
 
-        const rawQueryEmbedding = await openai_client.embeddings.create({
-            input: lastMessage,
-            model: embedModel
-        });
+        // Efficient embedding and query request
+        const [rawQueryEmbedding] = await Promise.all([
+            openai_client.embeddings.create({
+                input: lastMessage,
+                model: embedModel
+            }),
+            pineconeIndex.namespace('wikipedia-articles').query({
+                vector: queryEmbedding,
+                topK: 50,
+                includeMetadata: true,
+            })
+        ]);
 
         const queryEmbedding = rawQueryEmbedding.data[0].embedding;
 
@@ -47,6 +55,7 @@ async function performRAG(conversation) {
 
         const systemPrompt = `"You are a personal assistant. Answer any questions I have about the link provided."`;
 
+        // Optimize response generation
         const response = await openai_client.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
