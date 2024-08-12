@@ -1,6 +1,0 @@
-[build]
-  functions = "pages/api"
-
-[functions]
-  maxDuration = 900
-
