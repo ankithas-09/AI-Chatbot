@@ -33,39 +33,45 @@ export default function ChatbotPage({ username, created }) {
         role: msg.sender === 'user' ? 'user' : 'bot',
         content: msg.text
       }));
-
+  
       console.log('Sending conversation:', conversation); // Debugging line to verify format
-
+  
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(conversation), // Correctly format the conversation as an array
+        body: JSON.stringify(conversation),
       });
   
       if (response.ok) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = '';
-
+        let simulatedText = '';
+  
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           result += decoder.decode(value, { stream: true });
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages];
-            const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
-    
-            if (botIndex !== -1) {
-              newMessages[botIndex] = { ...newMessages[botIndex], text: result };
-            } else {
-              newMessages.push({ sender: 'bot', text: result, isComplete: false });
-            }
-    
-            return newMessages;
-          });
+          
+          // Simulate typing by adding one character at a time
+          for (let i = 0; i < result.length; i++) {
+            simulatedText += result[i];
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages];
+              const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
+              if (botIndex !== -1) {
+                newMessages[botIndex] = { ...newMessages[botIndex], text: simulatedText };
+              } else {
+                newMessages.push({ sender: 'bot', text: simulatedText, isComplete: false });
+              }
+              return newMessages;
+            });
+            await new Promise((resolve) => setTimeout(resolve, 30)); // Adjust typing speed here
+          }
         }
+  
         setMessages((prevMessages) => prevMessages.map(msg =>
           msg.sender === 'bot' && !msg.isComplete
             ? { ...msg, isComplete: true }
@@ -85,7 +91,7 @@ export default function ChatbotPage({ username, created }) {
     } finally {
       setIsTyping(false);
     }
-  };
+  };  
   
   const handleStop = () => {
     if (typingTimeoutRef.current) {
@@ -141,7 +147,6 @@ export default function ChatbotPage({ username, created }) {
             className="chat-input"
           />
           <button onClick={handleSend} className="button">Send</button>
-          <button onClick={handleStop} className="button">Stop</button>
         </div>
       </div>
       <button 

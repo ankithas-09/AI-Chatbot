@@ -1,32 +1,3 @@
-// import OpenAI from 'openai';
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-
-// export default async function handler(req, res) {
-//   if (req.method === 'POST') {
-//     const { prompt } = req.body;
-
-//     try {
-//       const completion = await openai.chat.completions.create({
-//         model: 'gpt-3.5-turbo-0125', // Use the correct model name
-//         messages: [{ role: 'user', content: prompt }],
-//         max_tokens: 150,
-//       });
-
-//       const responseText = completion.choices[0].message.content.trim();
-//       res.status(200).json({ response: responseText });
-//     } catch (error) {
-//       console.error('Error with OpenAI API:', error);
-//       res.status(500).json({ message: 'Error with OpenAI API' });
-//     }
-//   } else {
-//     res.status(405).json({ message: 'Method not allowed' });
-//   }
-// }
-
-
 import OpenAI from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAIEmbeddings } from "@langchain/openai";
@@ -74,7 +45,7 @@ async function performRAG(conversation) {
 
         const augmentedQuery = `<CONTEXT>\n${contexts.slice(0, 10).join("\n\n-------\n\n")}\n-------\n</CONTEXT>\n\n\n\nMY CONVERSATION:\n${lastFewMessages}\n\nMy QUESTION:\n${lastMessage}`;
 
-        const systemPrompt = `"You are a personal assistant. Answer any questions I have about the link provided.Out of context don't answer"`;
+        const systemPrompt = `"You are a personal assistant. Answer any questions I have about the link provided."`;
 
         const res = await openai_client.chat.completions.create({
             model: "gpt-4o-mini",
@@ -112,7 +83,9 @@ export async function POST(req, res) {
                     for await (const chunk of completion) {
                         const content = chunk.choices[0]?.delta?.content;
                         if (content) {
-                            const text = encoder.encode(content);
+                            // Remove '**' characters
+                            const cleanedContent = content.replace(/\*\*/g, '');
+                            const text = encoder.encode(cleanedContent);
                             controller.enqueue(text);
                         }
                     }
