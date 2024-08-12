@@ -22,76 +22,47 @@ export default function ChatbotPage({ username, created }) {
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
-  
+
     const userMessage = { sender: 'user', text: input };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
     setIsTyping(true);
-  
+
     try {
-      const conversation = [...messages, userMessage].map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'bot',
-        content: msg.text
-      }));
-  
-      console.log('Sending conversation:', conversation); // Debugging line to verify format
-  
-      const response = await fetch('/api/chatbot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(conversation),
-      });
-  
-      if (response.ok) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let result = '';
-        let simulatedText = '';
-  
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          result += decoder.decode(value, { stream: true });
-          
-          // Simulate typing by adding one character at a time
-          for (let i = 0; i < result.length; i++) {
-            simulatedText += result[i];
-            setMessages((prevMessages) => {
-              const newMessages = [...prevMessages];
-              const botIndex = newMessages.findIndex(msg => msg.sender === 'bot' && !msg.isComplete);
-              if (botIndex !== -1) {
-                newMessages[botIndex] = { ...newMessages[botIndex], text: simulatedText };
-              } else {
-                newMessages.push({ sender: 'bot', text: simulatedText, isComplete: false });
-              }
-              return newMessages;
-            });
-            await new Promise((resolve) => setTimeout(resolve, 30)); // Adjust typing speed here
-          }
+        const conversation = [...messages, userMessage].map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'bot',
+            content: msg.text
+        }));
+
+        const response = await fetch('/api/chatbot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(conversation),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                { sender: 'bot', text: result.text },
+            ]);
+        } else {
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                { sender: 'bot', text: 'Error: Unable to fetch response' },
+            ]);
         }
-  
-        setMessages((prevMessages) => prevMessages.map(msg =>
-          msg.sender === 'bot' && !msg.isComplete
-            ? { ...msg, isComplete: true }
-            : msg
-        ));
-      } else {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { sender: 'bot', text: 'Error: Unable to fetch response' },
-        ]);
-      }
     } catch (error) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { sender: 'bot', text: 'Failed to send message.' },
-      ]);
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            { sender: 'bot', text: 'Failed to send message.' },
+        ]);
     } finally {
-      setIsTyping(false);
+        setIsTyping(false);
     }
-  };  
+  };
   
   const handleStop = () => {
     if (typingTimeoutRef.current) {

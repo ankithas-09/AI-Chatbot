@@ -47,16 +47,16 @@ async function performRAG(conversation) {
 
         const systemPrompt = `"You are a personal assistant. Answer any questions I have about the link provided."`;
 
-        const res = await openai_client.chat.completions.create({
+        const response = await openai_client.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: augmentedQuery }
             ],
-            stream: true
+            stream: false // Set to false for non-streaming responses
         });
 
-        return res;
+        return response.choices[0].message.content; // Access the completion content directly
     } catch (error) {
         console.error('Error in performRAG:', error);
         throw error;
@@ -73,45 +73,11 @@ export default async function handler(req, res) {
 
 export async function POST(req, res) {
     try {
-        const data = req.body; // Use req.body to access the parsed JSON body
-        const completion = await performRAG(data);
+        const data = req.body;
+        const completionText = await performRAG(data);
 
-        const stream = new ReadableStream({
-            async start(controller) {
-                const encoder = new TextEncoder();
-                try {
-                    for await (const chunk of completion) {
-                        const content = chunk.choices[0]?.delta?.content;
-                        if (content) {
-                            // Remove '**' characters
-                            const cleanedContent = content.replace(/\*\*/g, '');
-                            const text = encoder.encode(cleanedContent);
-                            controller.enqueue(text);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Error processing stream:', err);
-                    controller.error(err);
-                } finally {
-                    controller.close();
-                }
-            },
-        });
-
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(decoder.decode(value));
-        }
-
-        res.end();
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).json({ text: completionText });
     } catch (error) {
         console.error('Error in POST handler:', error);
         res.status(500).json({ message: 'Internal Server Error', error: error.message });
