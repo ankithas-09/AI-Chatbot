@@ -37,7 +37,7 @@ async function performRAG(conversation) {
 
         const topMatches = await pineconeIndex.namespace('wikipedia-articles').query({
             vector: queryEmbedding,
-            topK: 100,
+            topK: 50,
             includeMetadata: true,
         });
 
