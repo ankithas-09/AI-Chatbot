@@ -35,8 +35,8 @@ Buddy is an AI-powered chatbot built using Next.js, React, and OpenAI. It incorp
     ```env
     OPENAI_API_KEY=${YOUR_API_KEY}
     MONGODB_URI=${YOUR_MONGODB_URI}
-    PINECONE_API_KEY=${YOUR_PINECONE_API_KEY}
-    PINECONE_INDEX_NAME=${YOUR_PINECONE_INDEX_NAME}
+    PINECONE_API_KEY=20d4c3d1-1577-4ce0-8ad9-6cf29596e6d0
+    PINECONE_INDEX_NAME=nextjs-ai-chatbot
     ```
 
 3. **Install Dependencies**
@@ -59,7 +59,7 @@ Buddy is an AI-powered chatbot built using Next.js, React, and OpenAI. It incorp
 
 ## Deployment
 
-The project is deployed and can be accessed at [https://ai-chatbot-six-mauve.vercel.app/](https://ai-chatbot-six-mauve.vercel.app/). 
+The project is deployed and can be accessed at [https://ai-chatbot-brown-two.vercel.app/](https://ai-chatbot-brown-two.vercel.app/). 
 
 ## License
 
